@@ -3,7 +3,7 @@
 #ID3 decision trees 
 #use Gain() 信息增益函数选择最优划分属性
 # 2018-05-04 @ Lyy
-
+import pandas as pd
 import numpy as np
 import math
 #定义决策树节点
@@ -18,21 +18,20 @@ class ID3_Node(object):
 class Config(object):
     def __init__(self):
         # 属性名列表
-        self.item_name = []
+        self.item_name = ['first','second','third','four']
         # 属性向量，初始值为1
-        self.item = []
+        self.item = [1,1,1,1]
         # 每个属性名，对应的属性可能取值列表，所以为二维数组
-        self.item_value = []
+        self.item_value = [[1,2,3],[1,2,3],[1,2,3]]
         # 标签名列表
-        self.lable = []
+        self.lable = ['Iris-virginica','Iris-versicolor','Iris-setosa']
 
 #采用递归算法训练决策树
-#def ID3TreeGenerate(D, A):
-
 
 
 def computInforEntropy(D,lable):
     """
+        计算信息熵
         lable 需是数据的标签列表
         D 是训练或部分训练数据集，组织方式是二维数组, 这里使用 numpy
     """
@@ -45,7 +44,7 @@ def computInforEntropy(D,lable):
                 i[j] += 1
                 break
     num = D.shape
-    Ent_D = 0
+    Ent_D = 0.0
     # 计算信息熵 
     for n in i:
         if n != 0:
@@ -55,6 +54,7 @@ def computInforEntropy(D,lable):
 
 def computInforGain(D, lable, item_number, item_value):
     """
+        计算信息增益
         D 为数据集
         lable 为标签列表
         item_number 为属性位置编号
@@ -82,7 +82,9 @@ def selectItem(D, item, item_value, lable, conse_item = []):
         选择最优划分属性
         D 是数据集
         item 属性列表
-        conse_item 是连续属性列表，默认为空
+        item_value 是属性可能取值
+        lable 是标签列表
+        conse_item 是连续属性列表，默认为空, 该程序暂未适配
     """
     Gain = []
     for i in range(0,len(item)):
@@ -133,7 +135,6 @@ def ID3TreeGenerate(D, A, nextnode, action):
     for item in A.item_value[opt_index]:
         Dv.append(D[D[:,opt_index]==item,:])
     for i in range(0,len(A.item_value)):
-        
         if Dv[i]:
             ID3TreeGenerate(Dv[i],A,node,str(A.item_value[i]))
         else:
@@ -141,6 +142,19 @@ def ID3TreeGenerate(D, A, nextnode, action):
             node.item_value[str(A.item_value[i])] = tempnode
             tempnode.isleaf = 1
             tempnode.item_lable = A.lable[num.argmax()]
+def dataDiscretize(dataSet):
+    m,n = dataSet.shape    #获取数据集行列（样本数和特征数)  
+    #disMat = tile([0],shape(dataSet))  #初始化离散化数据集
+    disMat = np.zeros((n,m))
+    dataSet = dataSet.T
+    dataSet = dataSet[0:n-1,:]
+    dataSet = dataSet.astype(np.float)
+    for i in range(n-1):    #由于最后一列为类别，因此遍历前n-1列，即遍历特征列  
+       # x = [l[i] for l in dataSet] #获取第i+1特征向量  
+        disMat[i] = pd.cut(dataSet[i],3,labels=[1,2,3])   #调用cut函数，将特征离散化为3类，
+                                                        #可根据自己需求更改离散化种类  
+    disMat[-1] = dataSet[-1]
+    return disMat.T
 def StartTrain():
     '''
         训练决策树起始函数
@@ -149,9 +163,19 @@ def StartTrain():
     D = []
     A = Config()
     # init
-
-
+    iris_object = open("iris.txt")
+    item = []
+    for line in iris_object:
+        for k in range(0,4):
+            item.append(float(line.split(',')[k]))
+            item.append(line.split(',')[4].strip())
+            D.append(item)
+            item = []
+    iris_object.close
+    D = dataDiscretize(np.array(D))
+    print(D)
     head = ID3_Node()
     head.item_name = 'head'
     head.item_value['head'] = []
     ID3TreeGenerate(D,A,head,'head')
+StartTrain()
