@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 #ID3 decision trees 
 #use Gain() 信息增益函数选择最优划分属性
@@ -13,11 +14,16 @@ class ID3_Node(object):
         self.isleaf = 0             #节点标志位，默认 0 为非叶节点
         self.item_lable = 'null'    #当节点标志位为 1 时，表示该节点的类别
 
-#配置类
+#配置类，针对不同数据集经行人工初始化
 class Config(object):
     def __init__(self):
+        # 属性名列表
+        self.item_name = []
+        # 属性向量，初始值为1
         self.item = []
+        # 每个属性名，对应的属性可能取值列表，所以为二维数组
         self.item_value = []
+        # 标签名列表
         self.lable = []
 
 #采用递归算法训练决策树
@@ -61,7 +67,7 @@ def computInforGain(D, lable, item_number, item_value):
         temp.append([])
     for item in D:
         for i in range(0,len(item_value)):
-            if item[-1] == item_value[i]:
+            if item[item_number] == item_value[i]:
                 temp[i].append(item)
                 break
     each_sub = 0
@@ -80,7 +86,10 @@ def selectItem(D, item, item_value, lable, conse_item = []):
     """
     Gain = []
     for i in range(0,len(item)):
-        Gain.append(computInforGain(D,lable,i,item_value[i]))
+        if item[i] != 0:
+            Gain.append(computInforGain(D,lable,i,item_value[i]))
+        else:
+            Gain.append(-1)
     index = Gain.index(max(Gain))
     return index
 
@@ -93,6 +102,56 @@ def ID3TreeGenerate(D, A, nextnode, action):
     """
     node = ID3_Node()
     nextnode.item_value[action] = node
-    
-    if !(max(A.item)):
+    num = np.zeros(len(A.lable))
+    #找出每一类的样本数量
+    for i in range(0,D.shape[0]):
+        for j in range(0,len(A.lable)):
+            if D[i][-1] == A.lable[j]:
+                num[j] += 1
+                break
+    #处理当属性为空，样本集属于同一类，每个样本属性值都相同的情况
+    #置为叶节点
+    if max(A.item)==0 | num.max() == D.shape[0]:
+        node.isleaf = 1
+        node.item_lable = A.lable[num.argmax()]
+        return
+    temp = D[0]
+    sign = 1
+    for item in D:
+        if True in temp != item:
+            sign = 0
+            break
+    if sign:
+        node.isleaf = 1
+        node.item_lable = A.lable[num.argmax()]
+        return
+    #选择最优属性
+    opt_index = selectItem(D,A.item,A.item_value,A.lable)
+    A.item[opt_index] = 0
+    Dv = []
+    #对于属性的每个取值，划分出对应数据集
+    for item in A.item_value[opt_index]:
+        Dv.append(D[D[:,opt_index]==item,:])
+    for i in range(0,len(A.item_value)):
+        
+        if Dv[i]:
+            ID3TreeGenerate(Dv[i],A,node,str(A.item_value[i]))
+        else:
+            tempnode = ID3_Node()
+            node.item_value[str(A.item_value[i])] = tempnode
+            tempnode.isleaf = 1
+            tempnode.item_lable = A.lable[num.argmax()]
+def StartTrain():
+    '''
+        训练决策树起始函数
+    '''
+    # 由数据文本或者数据库生成总训练集表，当然本程序更适用于文本数据
+    D = []
+    A = Config()
+    # init
 
+
+    head = ID3_Node()
+    head.item_name = 'head'
+    head.item_value['head'] = []
+    ID3TreeGenerate(D,A,head,'head')
