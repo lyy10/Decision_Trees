@@ -6,6 +6,7 @@
 import pandas as pd
 import numpy as np
 import math
+import id3_test
 #定义决策树节点
 class ID3_Node(object):
     def __init__(self):
@@ -199,13 +200,24 @@ def StartTrain():
         item = []
     iris_object.close
     D = dataDiscretize(D)
+    ##### 分割数据 #########
+    add = 0
+    testdata = []
+    for i in range(1,134,3):
+        testdata.append(D[i-add])
+        del D[i-add]
+        add += 1
+    print(len(D))
+    print(len(testdata))
+    #print(D)
     #for i in D:
     #    print(i)
     head = ID3_Node()
     head.item_name = 'head'
     head.item_value['head'] = []
     ID3TreeGenerate(D,A,head,'head')
-    ShowTree(head)
+    id3_test.Test(testdata,head,A)
+    #ShowTree(head)
 def ShowTree(head):
     head.view()
     for name in  head.item_value.keys():
